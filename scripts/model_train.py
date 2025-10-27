@@ -55,8 +55,9 @@ def train_model(epochs=10):
     best_val_acc = 0.0
     best_model_path = None
     
-    # Configuration MLflow
-    mlflow.set_tracking_uri("http://localhost:5000")
+    # Configuration MLflow (utilise le backend local)
+    os.makedirs('mlruns', exist_ok=True)
+    mlflow.set_tracking_uri("file:./mlruns")  # Backend local
     mlflow.set_experiment("dandelion_vs_grass_classifier")
     
     mlflow.pytorch.autolog()
