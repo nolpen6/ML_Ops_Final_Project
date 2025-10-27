@@ -74,8 +74,8 @@
 - [x] Configurations de base
 - [x] Documentation
 - [x] Dataset téléchargé (400 images)
-- [ ] Environnement virtuel créé
-- [ ] Dépendances installées
+- [x] Environnement virtuel créé (venv/)
+- [x] Dépendances installées (PyTorch 2.9.0, FastAPI 0.117.1, MLflow 3.5.1)
 
 ### Phase 2 : Data & Training
 - [ ] Test des scripts de préparation
