@@ -91,6 +91,40 @@
 
 ---
 
+### [Étape 3] Entraînement du Modèle - 27 Octobre 2024
+
+**Objectif** : Entraîner le modèle de classification sur le dataset
+
+**Actions réalisées** :
+1. ✅ Entraînement sur 3 époques (pour test rapide)
+2. ✅ Modèle entraîné avec succès
+3. ✅ Meilleure accuracy : **83.33%**
+4. ✅ 4 modèles sauvegardés dans `models/`
+
+**Détails** :
+- Architecture : ResNet18 (Transfer Learning)
+- Dataset : 320 images train, 96 images validation
+- Batch size : 32
+- Optimizer : Adam, lr=0.001
+- Loss function : CrossEntropyLoss
+- Device : CPU
+- Durée : ~1-2 minutes
+
+**Résultats** :
+- Epoch 1 : Val Acc = 55.21%
+- Epoch 2 : Val Acc = 64.58%
+- Epoch 3 : Val Acc = 83.33% ⭐
+
+**Modèles sauvegardés** :
+- `models/best_model_epoch_1.pth` (43 MB)
+- `models/best_model_epoch_2.pth` (43 MB)
+- `models/best_model_epoch_3.pth` (43 MB) ⭐
+- `models/final_model.pth` (43 MB)
+
+**État** : ✅ Complété
+
+---
+
 ## 📊 Checklist Globale
 
 ### Phase 1 : Setup de base
