@@ -1,0 +1,29 @@
+# Configuration Airflow pour le projet MLOps
+# À adapter selon votre environnement
+
+# Connexions à définir dans Airflow Admin
+connections:
+  minio:
+    type: s3
+    endpoint_url: http://localhost:9000
+    aws_access_key_id: minioadmin
+    aws_secret_access_key: minioadmin
+  
+  postgres:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: mlops
+    login: airflow
+    password: airflow
+
+  mlflow:
+    type: http
+    host: http://localhost:5000
+
+# Variables Airflow
+variables:
+  minio_bucket: mlops-data
+  model_version: latest
+  training_epochs: 10
+

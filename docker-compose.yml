@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # MinIO - Object Storage (compatible S3)
+  minio:
+    image: minio/minio:latest
+    container_name: mlops-minio
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console web
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    networks:
+      - mlops-network
+
+  # MLflow Tracking Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlops-mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=s3://mlops-artifacts
+    command: mlflow server --host 0.0.0.0 --port 5000 --default-artifact-root s3://mlops-artifacts
+    depends_on:
+      - minio
+    networks:
+      - mlops-network
+
+  # PostgreSQL pour métadonnées Airflow
+  postgres:
+    image: postgres:15
+    container_name: mlops-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: mlops
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mlops-network
+
+  # Redis pour Airflow (backend de queue)
+  redis:
+    image: redis:7-alpine
+    container_name: mlops-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mlops-network
+
+volumes:
+  minio_data:
+  postgres_data:
+
+networks:
+  mlops-network:
+    driver: bridge
+

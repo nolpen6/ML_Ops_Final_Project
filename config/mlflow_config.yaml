@@ -1,0 +1,29 @@
+# Configuration MLflow
+# URI du serveur MLflow
+mlflow_server_uri: "http://localhost:5000"
+
+# Nom de l'expérience
+experiment_name: "dandelion_vs_grass_classifier"
+
+# Paramètres à logger
+parameters:
+  model_type: "ResNet18"
+  num_classes: 2
+  image_size: "128x128"
+  learning_rate: 0.001
+  batch_size: 32
+
+# Métriques à tracker
+metrics:
+  - "loss"
+  - "accuracy"
+  - "precision"
+  - "recall"
+  - "f1_score"
+
+# Artifacts à sauvegarder
+artifacts:
+  - "model.pth"
+  - "training_curves.png"
+  - "confusion_matrix.png"
+
