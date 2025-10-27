@@ -66,6 +66,31 @@
 
 ---
 
+### [Étape 2] Amélioration des Scripts - 27 Octobre 2024
+
+**Objectif** : Améliorer model_train.py avec validation, métriques et sauvegarde automatique
+
+**Actions réalisées** :
+1. ✅ Créé script test_images.py pour vérifier le chargement des images
+2. ✅ Amélioré model_train.py avec :
+   - Validation pendant l'entraînement
+   - Calcul de métriques (loss, accuracy) train et val
+   - Sauvegarde automatique du meilleur modèle
+   - Tracking MLflow détaillé
+   - Logs explicites de progression
+3. ✅ Testé que les images se chargent correctement (400 images détectées)
+
+**Détails** :
+- Dataset : 200 grass + 200 dandelion
+- Split : ~320 train / ~96 validation
+- Batch size : 32
+- Model : ResNet18 avec transfer learning
+- Optimizer : Adam, lr=0.001
+
+**État** : ✅ Complété
+
+---
+
 ## 📊 Checklist Globale
 
 ### Phase 1 : Setup de base
