@@ -47,13 +47,22 @@
 
 ---
 
-### [Étape 1] (À venir)
+### [Étape 1] Téléchargement du Dataset - 27 Octobre 2024
 
-**Objectif** : 
+**Objectif** : Récupérer les images d'entraînement (dandelion et grass) depuis le repo de référence
 
-**Actions à réaliser** :
+**Actions réalisées** :
+1. ✅ Identifié le dataset dans `greenr-airflow/data/`
+2. ✅ Copié les dossiers `dandelion/` (200 images) et `grass/` (200 images)
+3. ✅ Vérifié que les fichiers sont bien ignorés par Git (présents localement mais non trackés)
 
-**État** : 🔄 En attente
+**Détails** :
+- Source : `/Users/matthieudollfus/Documents/Master 2/MLOps/greenr-airflow/data/`
+- Destination : `/Users/matthieudollfus/Documents/Master 2/MLOps/emmaloou-ML_Ops/data/`
+- Total : 400 images (200 dandelion + 200 grass)
+- Taille : ~5.2 MB
+
+**État** : ✅ Complété
 
 ---
 
@@ -64,7 +73,7 @@
 - [x] Scripts existants organisés
 - [x] Configurations de base
 - [x] Documentation
-- [ ] Dataset téléchargé
+- [x] Dataset téléchargé (400 images)
 - [ ] Environnement virtuel créé
 - [ ] Dépendances installées
 
