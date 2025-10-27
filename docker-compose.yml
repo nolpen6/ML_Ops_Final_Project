@@ -22,7 +22,7 @@ services:
     image: ghcr.io/mlflow/mlflow:latest
     container_name: mlops-mlflow
     ports:
-      - "5000:5000"
+      - "5001:5000"  # Mappage sur 5001 car 5000 est déjà utilisé
     volumes:
       - ./mlruns:/mlflow/mlruns
     environment:
@@ -39,7 +39,7 @@ services:
     image: postgres:15
     container_name: mlops-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Mappage sur 5433 car 5432 est déjà utilisé
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
