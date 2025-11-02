@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-config
+data:
+  minio_endpoint: "http://minio-service:9000"
+  mlflow_tracking_uri: "http://mlflow-service:5000"
+  model_path: "/app/models/best_model_epoch_3.pth"
+

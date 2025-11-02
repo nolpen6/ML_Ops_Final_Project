@@ -1,0 +1,33 @@
+FROM apache/airflow:2.8.0
+
+# Passer en root pour installer les dépendances système
+USER root
+
+# Installer les dépendances système nécessaires pour PyTorch
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Retourner à l'utilisateur airflow
+USER airflow
+
+# Copier et installer les dépendances Python
+COPY requirements.txt /requirements.txt
+
+# Installer les dépendances (sans torch pour éviter les conflits avec CPU/GPU)
+# On installera seulement les dépendances nécessaires pour les scripts
+RUN pip install --no-cache-dir \
+    boto3>=1.28.0 \
+    mlflow>=2.7.0 \
+    pandas>=2.0.0 \
+    numpy>=1.24.0 \
+    Pillow>=10.0.0 \
+    scikit-learn>=1.3.0 \
+    psycopg2-binary>=2.9.0
+
+# Note: PyTorch et torchvision seront installés dynamiquement si nécessaire
+# ou via un script séparé car ils sont volumineux et dépendent de l'environnement
+
