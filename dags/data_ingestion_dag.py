@@ -32,9 +32,29 @@ def scan_images():
     """Scan le dossier data/ pour compter les images"""
     import glob
     
-    grass_images = glob.glob('data/grass/*.jpg')
-    dandelion_images = glob.glob('data/dandelion/*.jpg')
+    # Essayer plusieurs chemins possibles (local ou Docker)
+    possible_data_dirs = [
+        "data",
+        "/opt/airflow/data",
+        "./data"
+    ]
     
+    data_dir = None
+    for dir_path in possible_data_dirs:
+        if os.path.exists(dir_path):
+            data_dir = dir_path
+            break
+    
+    if not data_dir:
+        print("⚠️ Dossier data/ non trouvé dans aucun des chemins suivants:")
+        for dir_path in possible_data_dirs:
+            print(f"   - {dir_path}")
+        return 0
+    
+    grass_images = glob.glob(f'{data_dir}/grass/*.jpg')
+    dandelion_images = glob.glob(f'{data_dir}/dandelion/*.jpg')
+    
+    print(f"✅ Dossier trouvé : {data_dir}")
     print(f"✅ Images grass : {len(grass_images)}")
     print(f"✅ Images dandelion : {len(dandelion_images)}")
     print(f"✅ Total : {len(grass_images) + len(dandelion_images)} images")
@@ -44,11 +64,10 @@ def scan_images():
 
 def upload_to_minio():
     """Upload des images vers MinIO"""
-    from scripts.upload_to_minio import upload_file_to_minio
+    from scripts.upload_to_minio import upload_to_minio as upload_file_to_minio
     import glob
-    import os
     
-    ENDPOINT_URL = "http://localhost:9000"
+    ENDPOINT_URL = "http://minio:9000"  # Utiliser le nom du service Docker
     ACCESS_KEY = "minioadmin"
     SECRET_KEY = "minioadmin"
     BUCKET_NAME = "mlops-data"
@@ -57,8 +76,20 @@ def upload_to_minio():
     from scripts.upload_model_to_minio import ensure_bucket_exists
     ensure_bucket_exists(BUCKET_NAME, ENDPOINT_URL, ACCESS_KEY, SECRET_KEY)
     
+    # Trouver le dossier data
+    possible_data_dirs = ["data", "/opt/airflow/data", "./data"]
+    data_dir = None
+    for dir_path in possible_data_dirs:
+        if os.path.exists(dir_path):
+            data_dir = dir_path
+            break
+    
+    if not data_dir:
+        print("⚠️ Dossier data/ non trouvé")
+        return
+    
     # Upload images grass
-    grass_images = glob.glob('data/grass/*.jpg')[:10]  # Limiter à 10 pour test
+    grass_images = glob.glob(f'{data_dir}/grass/*.jpg')[:10]  # Limiter à 10 pour test
     for img_path in grass_images:
         filename = os.path.basename(img_path)
         upload_file_to_minio(
@@ -67,7 +98,7 @@ def upload_to_minio():
         )
     
     # Upload images dandelion
-    dandelion_images = glob.glob('data/dandelion/*.jpg')[:10]  # Limiter à 10 pour test
+    dandelion_images = glob.glob(f'{data_dir}/dandelion/*.jpg')[:10]  # Limiter à 10 pour test
     for img_path in dandelion_images:
         filename = os.path.basename(img_path)
         upload_file_to_minio(
@@ -75,7 +106,7 @@ def upload_to_minio():
             ENDPOINT_URL, ACCESS_KEY, SECRET_KEY
         )
     
-    print("✅ Upload vers MinIO terminé")
+    print(f"✅ Upload vers MinIO terminé (depuis {data_dir})")
 
 
 # Tâches du DAG

@@ -5,6 +5,7 @@ Entraîne le modèle et upload vers MinIO
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
+import os
 
 default_args = {
     'owner': 'MLOps Team',
@@ -40,22 +41,36 @@ def upload_model():
     """Upload le modèle vers MinIO"""
     from scripts.upload_model_to_minio import upload_file_to_minio, ensure_bucket_exists
     
-    ENDPOINT_URL = "http://localhost:9000"
+    ENDPOINT_URL = "http://minio:9000"  # Utiliser le nom du service Docker
     ACCESS_KEY = "minioadmin"
     SECRET_KEY = "minioadmin"
     BUCKET_NAME = "mlops-models"
     
     ensure_bucket_exists(BUCKET_NAME, ENDPOINT_URL, ACCESS_KEY, SECRET_KEY)
     
-    # Upload le meilleur modèle
-    model_path = "models/best_model_epoch_3.pth"
-    if os.path.exists(model_path):
+    # Upload le meilleur modèle - chercher dans différents chemins possibles
+    possible_paths = [
+        "models/best_model_epoch_3.pth",
+        "/opt/airflow/models/best_model_epoch_3.pth",
+        "./models/best_model_epoch_3.pth"
+    ]
+    
+    model_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            model_path = path
+            break
+    
+    if model_path:
         upload_file_to_minio(
             model_path, BUCKET_NAME, "models/best_model.pth",
             ENDPOINT_URL, ACCESS_KEY, SECRET_KEY
         )
+        print(f"✅ Modèle uploadé depuis {model_path}")
     else:
-        print("⚠️ Modèle non trouvé")
+        print("⚠️ Modèle non trouvé dans aucun des chemins suivants:")
+        for path in possible_paths:
+            print(f"   - {path}")
 
 
 train_task = PythonOperator(

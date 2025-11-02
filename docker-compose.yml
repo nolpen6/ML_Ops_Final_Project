@@ -48,6 +48,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - mlops-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis pour Airflow (backend de queue)
   redis:
@@ -55,6 +60,118 @@ services:
     container_name: mlops-redis
     ports:
       - "6379:6379"
+    networks:
+      - mlops-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow - Initialisation de la DB
+  airflow-init:
+    image: apache/airflow:2.8.0
+    container_name: mlops-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        function check_db() {
+          python << END
+        import sys
+        import psycopg2
+        try:
+            conn = psycopg2.connect(
+                host="postgres",
+                user="airflow",
+                password="airflow",
+                dbname="mlops"
+            )
+            conn.close()
+            sys.exit(0)
+        except:
+            sys.exit(1)
+        END
+        }
+        until check_db; do
+          echo "Waiting for PostgreSQL..."
+          sleep 1
+        done
+        airflow db init
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname Admin \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/mlops
+      - AIRFLOW__CORE__FERNET_KEY=yr8gmt1n7KJKlTnCIbH86cUgBPSbimA2SVLLXiIVg2s=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mlops-network
+
+  # Airflow - Webserver
+  airflow-webserver:
+    image: apache/airflow:2.8.0
+    container_name: mlops-airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/mlops
+      - AIRFLOW__CORE__FERNET_KEY=yr8gmt1n7KJKlTnCIbH86cUgBPSbimA2SVLLXiIVg2s=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+      - ./scripts:/opt/airflow/scripts
+      - ./models:/opt/airflow/models
+      - ./data:/opt/airflow/data
+    depends_on:
+      - airflow-init
+      - postgres
+      - redis
+    networks:
+      - mlops-network
+
+  # Airflow - Scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.8.0
+    container_name: mlops-airflow-scheduler
+    command: scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/mlops
+      - AIRFLOW__CORE__FERNET_KEY=yr8gmt1n7KJKlTnCIbH86cUgBPSbimA2SVLLXiIVg2s=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+      - ./scripts:/opt/airflow/scripts
+      - ./models:/opt/airflow/models
+      - ./data:/opt/airflow/data
+    depends_on:
+      - airflow-init
+      - postgres
+      - redis
     networks:
       - mlops-network
 

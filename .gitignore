@@ -74,3 +74,6 @@ mlruns/
 # Kubernetes
 *.kubeconfig
 
+airflow/logs/
+airflow/config/*
+*.code-workspace
