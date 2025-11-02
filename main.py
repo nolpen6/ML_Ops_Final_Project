@@ -211,9 +211,9 @@ async def analyze_image(file: UploadFile = File(...)):
 # Événement au démarrage
 @app.on_event("startup")
 async def startup_event():
-    print("🚀 Démarrage de l'API...")
+    print("Démarrage de l'API...")
     ensure_bucket_exists()
-    print("✅ API prête à recevoir des requêtes sur http://localhost:8000")
+    print("API prête à recevoir des requêtes sur http://localhost:8000")
 
 # Point d'entrée pour lancer l'application
 if __name__ == "__main__":
