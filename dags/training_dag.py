@@ -29,7 +29,14 @@ dag = DAG(
 
 def train_model():
     """Entraîne le modèle"""
-    from scripts.model_train import train_model
+    import sys
+    
+    # Ajouter le chemin des scripts au PYTHONPATH
+    scripts_path = "/opt/airflow/scripts"
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
+    
+    from model_train import train_model
     
     print("🚀 Démarrage de l'entraînement...")
     model = train_model(epochs=3)
@@ -39,7 +46,14 @@ def train_model():
 
 def upload_model():
     """Upload le modèle vers MinIO"""
-    from scripts.upload_model_to_minio import upload_file_to_minio, ensure_bucket_exists
+    import sys
+    
+    # Ajouter le chemin des scripts au PYTHONPATH
+    scripts_path = "/opt/airflow/scripts"
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
+    
+    from upload_model_to_minio import upload_file_to_minio, ensure_bucket_exists
     
     ENDPOINT_URL = "http://minio:9000"  # Utiliser le nom du service Docker
     ACCESS_KEY = "minioadmin"
@@ -52,7 +66,7 @@ def upload_model():
     possible_paths = [
         "models/best_model_epoch_3.pth",
         "/opt/airflow/models/best_model_epoch_3.pth",
-        "./models/best_model_epoch_3.pth"
+        "./models/best_model.pth"
     ]
     
     model_path = None

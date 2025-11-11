@@ -3,10 +3,24 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
+import sys
+import os
+
+# Ajouter le chemin des scripts au PYTHONPATH si nécessaire
+# Dans le conteneur Airflow, utiliser directement le chemin Docker
+# En local, utiliser le chemin relatif
+if os.path.exists('/opt/airflow/scripts'):
+    scripts_path = '/opt/airflow/scripts'
+else:
+    # En local, utiliser le répertoire parent de ce fichier
+    scripts_path = os.path.dirname(os.path.abspath(__file__))
+
+if scripts_path not in sys.path:
+    sys.path.insert(0, scripts_path)
+
 from data_preparation import load_data
 import mlflow
 import mlflow.pytorch
-import os
 
 class SimpleCNN(nn.Module):
     def __init__(self):
@@ -36,11 +50,20 @@ def train_model(epochs=10):
     Returns:
         Le modèle entraîné
     """
+    # Changer le répertoire de travail pour éviter les problèmes de chemin
+    original_cwd = os.getcwd()
+    if os.path.exists('/opt/airflow'):
+        os.chdir('/opt/airflow')
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"🔧 Device utilisé : {device}")
     
-    # Charger les données
-    train_loader, val_loader = load_data()
+    # Charger les données - utiliser le chemin Docker dans le conteneur
+    if os.path.exists('/opt/airflow/data'):
+        data_dir = '/opt/airflow/data'
+    else:
+        data_dir = 'data'
+    train_loader, val_loader = load_data(data_dir=data_dir)
     print(f"📊 Train batches: {len(train_loader)}, Val batches: {len(val_loader)}")
     
     # Créer le modèle
@@ -49,15 +72,44 @@ def train_model(epochs=10):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
     # Créer le dossier models/ s'il n'existe pas
-    os.makedirs('models', exist_ok=True)
+    # Utiliser le chemin Docker dans le conteneur
+    if os.path.exists('/opt/airflow/models'):
+        models_dir = '/opt/airflow/models'
+    else:
+        models_dir = 'models'
+        os.makedirs(models_dir, exist_ok=True)
     
     # Variables pour tracking
     best_val_acc = 0.0
     best_model_path = None
     
-    # Configuration MLflow (utilise le backend local)
-    os.makedirs('mlruns', exist_ok=True)
-    mlflow.set_tracking_uri("file:./mlruns")  # Backend local
+    # Configuration MLflow
+    # Utiliser le serveur MLflow HTTP pour enregistrer les runs dans SQLite
+    # Utiliser l'adresse IP du conteneur MLflow pour éviter l'erreur "Invalid Host header"
+    if os.path.exists('/opt/airflow'):
+        # Dans le conteneur Airflow, obtenir l'IP du conteneur MLflow
+        import subprocess
+        try:
+            # Obtenir l'IP du conteneur MLflow via le réseau Docker
+            result = subprocess.run(['getent', 'hosts', 'mlflow'], 
+                                  capture_output=True, text=True, timeout=2)
+            if result.returncode == 0:
+                mlflow_ip = result.stdout.split()[0]
+                mlflow_uri = f"http://{mlflow_ip}:5000"
+            else:
+                # Fallback: utiliser le nom du service (peut causer l'erreur Invalid Host header)
+                mlflow_uri = "http://mlflow:5000"
+        except Exception as e:
+            print(f"⚠️ Erreur lors de la résolution de l'IP MLflow: {e}")
+            # Fallback: utiliser le nom du service
+            mlflow_uri = "http://mlflow:5000"
+        
+        mlflow.set_tracking_uri(mlflow_uri)
+        print(f"🔗 MLflow Tracking URI: {mlflow_uri}")
+    else:
+        # En local, utiliser le serveur MLflow sur localhost
+        mlflow.set_tracking_uri("http://localhost:5001")
+        print(f"🔗 MLflow Tracking URI: http://localhost:5001")
     mlflow.set_experiment("dandelion_vs_grass_classifier")
     
     mlflow.pytorch.autolog()
@@ -128,19 +180,30 @@ def train_model(epochs=10):
             # Sauvegarder le meilleur modèle
             if avg_val_acc > best_val_acc:
                 best_val_acc = avg_val_acc
-                best_model_path = f"models/best_model_epoch_{epoch+1}.pth"
+                best_model_path = os.path.join(models_dir, f"best_model_epoch_{epoch+1}.pth")
                 torch.save(model.state_dict(), best_model_path)
                 print(f"  ✅ Nouveau meilleur modèle sauvegardé ! (Acc: {best_val_acc:.2f}%)")
                 mlflow.log_metric("best_val_accuracy", best_val_acc)
         
         # Sauvegarder le modèle final
-        final_model_path = "models/final_model.pth"
+        final_model_path = os.path.join(models_dir, "final_model.pth")
         torch.save(model.state_dict(), final_model_path)
-        mlflow.log_artifact(final_model_path)
+        # Logger l'artifact seulement si le chemin est valide (commence par /opt/airflow)
+        if final_model_path.startswith('/opt/airflow'):
+            try:
+                mlflow.log_artifact(final_model_path)
+            except Exception as e:
+                print(f"⚠️ Impossible de logger l'artifact MLflow : {e}")
         
         # Sauvegarder le meilleur modèle
-        if best_model_path:
-            mlflow.log_artifact(best_model_path)
+        if best_model_path and best_model_path.startswith('/opt/airflow'):
+            try:
+                mlflow.log_artifact(best_model_path)
+            except Exception as e:
+                print(f"⚠️ Impossible de logger l'artifact MLflow : {e}")
+    
+    # Restaurer le répertoire de travail original
+    os.chdir(original_cwd)
     
     print("\n" + "=" * 60)
     print("✅ Entraînement terminé !")

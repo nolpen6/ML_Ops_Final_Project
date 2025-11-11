@@ -64,7 +64,16 @@ def scan_images():
 
 def upload_to_minio():
     """Upload des images vers MinIO"""
-    from scripts.upload_to_minio import upload_to_minio as upload_file_to_minio
+    import sys
+    import os
+    
+    # Ajouter le chemin des scripts au PYTHONPATH
+    scripts_path = "/opt/airflow/scripts"
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
+    
+    from upload_to_minio import upload_to_minio as upload_file_to_minio
+    from upload_model_to_minio import ensure_bucket_exists
     import glob
     
     ENDPOINT_URL = "http://minio:9000"  # Utiliser le nom du service Docker
@@ -73,7 +82,6 @@ def upload_to_minio():
     BUCKET_NAME = "mlops-data"
     
     # Créer le bucket
-    from scripts.upload_model_to_minio import ensure_bucket_exists
     ensure_bucket_exists(BUCKET_NAME, ENDPOINT_URL, ACCESS_KEY, SECRET_KEY)
     
     # Trouver le dossier data
